@@ -26,7 +26,7 @@ app.use(function(req, res, next) {
 const usersRouter = require('./routes/users')
 app.use('/users', usersRouter)
 
-const sessionsRouter = require('./routes/tests')
+const sessionsRouter = require('./routes/sessions')
 app.use('/sessions', sessionsRouter)
 
 app.listen(3001, () => console.log('Server Started listening on port 3001'))

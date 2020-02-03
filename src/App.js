@@ -1,6 +1,7 @@
 import React from 'react';
 import {Component} from 'react';
-import './dropdown.css';
+import axios from 'axios';
+//import './dropdown.css';
 
 // material ui imports
 import InputLabel from '@material-ui/core/InputLabel';
@@ -9,9 +10,13 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import Box from '@material-ui/core/Box';
+import Container from '@material-ui/core/Container';
+
+
 
 // google login
-import { GoogleLogin, GoogleLogout} from 'react-google-login';
+import { GoogleLogin } from 'react-google-login';
 
 
 class App extends Component {
@@ -24,7 +29,10 @@ class App extends Component {
     location:'',
     sizeOpen: false,
     shapeOpen: false,
-    windOpen: false
+    windOpen: false,
+    email: '',
+    name: '',
+    loggedIn: false
   }
 
   validateData = () => {
@@ -38,14 +46,67 @@ class App extends Component {
     event.preventDefault();
     if(this.validateData()){
       console.log("saving session to database");
-      const sessionData = {date: this.state.date,
+      const sessionData = {owner: this.state.email,
+                          date: this.state.date,
                           location: this.state.location,
                           size: this.state.size,
                           shape: this.state.shape,
                           windDir: this.state.windDir
                         }
-      console.log(sessionData);
+    //  console.log(sessionData);
+      const postURL = 'http://localhost:3001/sessions'
+      axios.post(postURL,sessionData)
+        .then((res) => {
+              console.log(res);
+            })
+        .catch((err) => {
+              console.log(err);
+      });
+      console.log("saved session to database")
+    }else {
+      console.log("could not validate data");
     }
+  }
+
+  loggedInView(){
+    return(
+      <Container maxWidth="lg">
+
+        <Box  color="success.contrastText" p={2}>
+
+          <h1>
+            Session Logger
+          </h1>
+          <h3>
+            {this.state.email}
+          </h3>
+
+          <TextField
+             label="Date Time"
+             type="datetime-local"
+             fullWidth={true}
+             defaultValue="2020-01-24T00:00"
+             onChange={event => this.setState({date: event.target.value})}
+             InputLabelProps={{
+               shrink: true,
+             }}
+           />
+
+          <TextField id="standard-basic" fullWidth={true} label="Location" onChange={event => this.setState({location: event.target.value})}/>
+
+          {this.sizeInput()}
+          {this.shapeInput()}
+          {this.windInput()}
+
+          <br/>
+          <br/>
+
+          <Button variant="contained" color="primary" onClick={this.submitData}>Save Session</Button>
+
+          </Box>
+
+          </Container>
+    );
   }
 
   sizeInput(){
@@ -125,6 +186,75 @@ class App extends Component {
     );
   }
 
+  notLoggedIn(){
+        return(
+            <div>
+            <Container maxWidth="lg">
+            <Box  color="success.contrastText" p={2}>
+            <h1>
+              Session Logger
+            </h1>
+            <GoogleLogin
+            clientId="687641367817-phvujd6f7h6cs69sobr0hbjkme4kodt1.apps.googleusercontent.com"
+            buttonText="Login"
+            onSuccess={this.responseGoogle}
+            onFailure={this.responseGoogle}
+            cookiePolicy={'single_host_origin'}
+            />
+            </Box>
+            </Container>
+            </div>
+
+        );
+      }
+
+  checkForLogin(){
+    if(this.state.loggedIn){
+      return this.loggedInView();
+    } else {
+      return this.notLoggedIn();
+    }
+
+  }
+
+
+  responseGoogle = (response) => {
+          console.log(response);
+          this.setState({email: response.profileObj.email, name: response.profileObj.name, loggedIn: true});
+          // check if the user is in the database if not then add a new user
+          const baseURL = 'http://localhost:3001/users/?email='
+          const queryURL = baseURL + this.state.email;
+          console.log(queryURL);
+          //first check if user is in the database
+          axios.get(queryURL)
+                    .then((res) => {
+                      console.log(res);
+                      console.log(res.data.length);
+                      // if user is not in the database
+                      if(res.data.length === 0){
+                        //save user to database
+                        console.log("saving user to database");
+                        const postURL = baseURL + this.state.email +'&name=' + this.state.name
+                        console.log(postURL);
+                        axios.post(postURL)
+                          .then((res) => {
+                            console.log(res);
+                            console.log("saved user to database");
+                            this.setState({userID: res.data._id});
+                          })
+                          .catch((err) => {
+                            console.log(err);
+                          })
+                      } else {
+                        console.log("already in database");
+                        this.setState({userID: res.data[0]._id});
+                      }
+                    })
+                    .catch((err) => {
+                      console.log(err);
+                    });
+        }
+
 
   handleSizeChange = event => {
     this.setState({size:event.target.value});
@@ -186,48 +316,13 @@ class App extends Component {
 
 
     return (
-      <div className="App">
-        <h1>
-          Session Logger
-        </h1>
+      <div className="App" >
 
-          <TextField
-             label="Date Time"
-             type="datetime-local"
-             fullWidth={true}
-             defaultValue="2020-01-24T00:00"
-             onChange={event => this.setState({date: event.target.value})}
-             InputLabelProps={{
-               shrink: true,
-             }}
-           />
+        {this.checkForLogin()}
 
-          <TextField id="standard-basic" fullWidth={true} label="Location" onChange={event => this.setState({location: event.target.value})}/>
-
-          {this.sizeInput()}
-          {this.shapeInput()}
-          {this.windInput()}
-
-          <Button variant="contained" color="primary" onClick={this.submitData}>Save Session</Button>
       </div>
     );
   }
 }
 
 export default App;
-
-
-/*
-
-might use this in the future
-
-<div class="dropdown">
- <button class="dropbtn">size:</button>
- <div class="dropdown-content">
-   <a href="/">1m</a>
-   <a href="/">2m</a>
-   <a href="/">3m</a>
- </div>
-</div>
-
-*/
