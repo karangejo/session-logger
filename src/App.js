@@ -1,7 +1,6 @@
 import React from 'react';
 import {Component} from 'react';
 import axios from 'axios';
-//import './dropdown.css';
 
 // material ui imports
 import InputLabel from '@material-ui/core/InputLabel';
@@ -12,8 +11,7 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
 import Container from '@material-ui/core/Container';
-
-
+import Avatar from '@material-ui/core/Avatar';
 
 // google login
 import { GoogleLogin } from 'react-google-login';
@@ -32,7 +30,9 @@ class App extends Component {
     windOpen: false,
     email: '',
     name: '',
-    loggedIn: false
+    imageURL: '',
+    loggedIn: false,
+    userID: ''
   }
 
   validateData = () => {
@@ -53,7 +53,6 @@ class App extends Component {
                           shape: this.state.shape,
                           windDir: this.state.windDir
                         }
-    //  console.log(sessionData);
       const postURL = 'http://localhost:3001/sessions'
       axios.post(postURL,sessionData)
         .then((res) => {
@@ -77,9 +76,18 @@ class App extends Component {
           <h1>
             Session Logger
           </h1>
+
+          <Avatar alt={this.state.name} src={this.state.imageURL} />
+
+          <h4>
+            {this.state.name}
+          </h4>
+
           <h3>
             {this.state.email}
           </h3>
+
+
 
           <TextField
              label="Date Time"
@@ -220,7 +228,7 @@ class App extends Component {
 
   responseGoogle = (response) => {
           console.log(response);
-          this.setState({email: response.profileObj.email, name: response.profileObj.name, loggedIn: true});
+          this.setState({email: response.profileObj.email, name: response.profileObj.name, imageURL: response.profileObj.imageUrl, loggedIn: true});
           // check if the user is in the database if not then add a new user
           const baseURL = 'http://localhost:3001/users/?email='
           const queryURL = baseURL + this.state.email;
@@ -229,7 +237,6 @@ class App extends Component {
           axios.get(queryURL)
                     .then((res) => {
                       console.log(res);
-                      console.log(res.data.length);
                       // if user is not in the database
                       if(res.data.length === 0){
                         //save user to database
@@ -292,34 +299,13 @@ class App extends Component {
     this.setState({windOpen:true});
   };
 
-  oldForm(){
-    return(
-      <form action="submit" onSubmit={this.submitData}>
-        <h4>date: </h4>
-        <input type="text" onChange={event => this.setState({date: event.target.value})}/><br/>
-        <h4>size: </h4>
-        <input type="text" onChange={event => this.setState({size: event.target.value})}/><br/>
-        <h4>shape: </h4>
-        <input type="text" onChange={event => this.setState({shape: event.target.value})}/><br/>
-        <h4>wind direction: </h4>
-        <input type="text" onChange={event => this.setState({windDir: event.target.value})}/><br/>
-        <h4>location </h4>
-        <input type="text" onChange={event => this.setState({location: event.target.value})}/><br/>
-
-        <button type="submit">Save Session</button>
-      </form>
-    );
-  }
-
 
   render () {
 
 
     return (
       <div className="App" >
-
         {this.checkForLogin()}
-
       </div>
     );
   }
