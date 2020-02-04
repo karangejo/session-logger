@@ -12,6 +12,7 @@ import Button from '@material-ui/core/Button';
 import Box from '@material-ui/core/Box';
 import Container from '@material-ui/core/Container';
 import Avatar from '@material-ui/core/Avatar';
+import Alert from '@material-ui/lab/Alert';
 
 // google login
 import { GoogleLogin } from 'react-google-login';
@@ -19,6 +20,7 @@ import { GoogleLogin } from 'react-google-login';
 
 class App extends Component {
 
+// state variables
   state = {
     date:'',
     size:'',
@@ -32,9 +34,11 @@ class App extends Component {
     name: '',
     imageURL: '',
     loggedIn: false,
+    saved: false,
     userID: ''
   }
 
+// make sure all the fields are filled in and not empty
   validateData = () => {
     if(!this.state.date || !this.state.size || !this.state.shape || !this.state.windDir || !this.state.location){
       return false;
@@ -42,8 +46,10 @@ class App extends Component {
     return true;
   }
 
+// save the data to the database through axios
   submitData = (event) => {
     event.preventDefault();
+    // first validate data
     if(this.validateData()){
       console.log("saving session to database");
       const sessionData = {owner: this.state.email,
@@ -53,10 +59,20 @@ class App extends Component {
                           shape: this.state.shape,
                           windDir: this.state.windDir
                         }
+      //post it to database API
       const postURL = 'http://localhost:3001/sessions'
       axios.post(postURL,sessionData)
         .then((res) => {
               console.log(res);
+              this.setState({saved: true});
+              //clear the saved button after 3.5 seconds
+              setTimeout(
+                function() {
+                    this.setState({saved: false});
+                }
+                .bind(this),
+                3500
+            );
             })
         .catch((err) => {
               console.log(err);
@@ -67,6 +83,14 @@ class App extends Component {
     }
   }
 
+  // display a message when user succesfully saves a session
+  savedMessage(){
+    return(
+        <Alert severity="success">Session Saved Succesfully!</Alert>
+    );
+  }
+
+  // what the user sees once logged in
   loggedInView(){
     return(
       <Container maxWidth="lg">
@@ -111,12 +135,15 @@ class App extends Component {
 
           <Button variant="contained" color="primary" onClick={this.submitData}>Save Session</Button>
 
+          {this.state.saved && this.savedMessage()}
+
           </Box>
 
           </Container>
     );
   }
 
+  // inputs with predetermined labels
   sizeInput(){
     return(
       <FormControl size="medium" fullWidth={true}>
@@ -194,6 +221,7 @@ class App extends Component {
     );
   }
 
+  //what the user sees when not logged in
   notLoggedIn(){
         return(
             <div>
@@ -204,7 +232,7 @@ class App extends Component {
             </h1>
             <GoogleLogin
             clientId="687641367817-phvujd6f7h6cs69sobr0hbjkme4kodt1.apps.googleusercontent.com"
-            buttonText="Login"
+            buttonText="Login with Google"
             onSuccess={this.responseGoogle}
             onFailure={this.responseGoogle}
             cookiePolicy={'single_host_origin'}
@@ -216,6 +244,7 @@ class App extends Component {
         );
       }
 
+  // check if user is logged in and display the correct view
   checkForLogin(){
     if(this.state.loggedIn){
       return this.loggedInView();
@@ -225,7 +254,7 @@ class App extends Component {
 
   }
 
-
+  // deal with google login and database
   responseGoogle = (response) => {
           console.log(response);
           this.setState({email: response.profileObj.email, name: response.profileObj.name, imageURL: response.profileObj.imageUrl, loggedIn: true});
@@ -262,7 +291,7 @@ class App extends Component {
                     });
         }
 
-
+  // handlers for the labeled inputs
   handleSizeChange = event => {
     this.setState({size:event.target.value});
   };
